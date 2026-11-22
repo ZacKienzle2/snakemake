@@ -260,5 +260,9 @@ class FilePersistence(PersistenceBase):
                 if e.errno != 2:
                     raise e
         self._lockfile.clear()
+
+    def cleanup_locks(self) -> None:
+        # Only --unlock removes the lock files of other running instances.
+        super().cleanup_locks()
         if os.path.exists(self._lockdir):
             shutil.rmtree(self._lockdir)
