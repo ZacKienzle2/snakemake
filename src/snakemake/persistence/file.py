@@ -236,7 +236,11 @@ class FilePersistence(PersistenceBase):
                 os.path.join(self._lockdir, f"{{n,[0-9]+}}.{lock_type}.lock")
             ):
                 if not os.path.isdir(lockfile):
-                    with open(lockfile) as lock:
+                    try:
+                        lock = open(lockfile)
+                    except FileNotFoundError:
+                        continue  # released by another run after the listing
+                    with lock:
                         for f in lock:
                             yield lock_type, f.strip()
 
@@ -246,11 +250,14 @@ class FilePersistence(PersistenceBase):
             return
         for i in count(0):
             lockfile = os.path.join(self._lockdir, f"{i}.{lock_type}.lock")
-            if not os.path.exists(lockfile):
-                self._lockfile[lock_type] = lockfile
-                with open(lockfile, "w") as lock:
-                    print(*keys_list, sep="\n", file=lock)
-                return
+            try:
+                lock = open(lockfile, "x")
+            except FileExistsError:
+                continue  # taken by another run
+            self._lockfile[lock_type] = lockfile
+            with lock:
+                print(*keys_list, sep="\n", file=lock)
+            return
 
     def _delete_locks(self) -> None:
         for lockfile in self._lockfile.values():
