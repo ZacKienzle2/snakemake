@@ -194,6 +194,10 @@ class LocalSourceFile(SourceFile):
     def get_path_or_uri(self, secret_free: bool) -> str:
         return self.path
 
+    def get_cache_path(self):
+        # Same path as SourceFile.get_cache_path, without parsing a local path as URI.
+        return os.path.join("file", unquote(os.path.expanduser(self.path).lstrip("/")))
+
     def is_persistently_cacheable(self):
         return False
 
